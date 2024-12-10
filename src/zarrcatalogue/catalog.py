@@ -8,6 +8,11 @@ import pandas as pd
 import numpy as np
 import shutil
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Dict, Optional, Union, Callable
+import glob
+from tqdm import tqdm
+
 class CustomJSONEncoder(json.JSONEncoder):
     """Custom JSON encoder that handles numpy types."""
     def default(self, obj):
@@ -128,6 +133,143 @@ class SimulationCatalog:
             if 'sim_path' in locals() and sim_path.exists():
                 shutil.rmtree(sim_path)
             raise
+
+
+    def _process_single_file(
+        self,
+        file_path: Path,
+        metadata_generator: Optional[Callable] = None,
+        tags: Optional[List[str]] = None,
+        converter: str = "mike"
+    ) -> Dict:
+        """Process a single file for bulk import.
+        
+        Args:
+            file_path: Path to the file
+            metadata_generator: Optional function to generate metadata from file
+            tags: List of tags to apply
+            converter: Converter type to use
+        """
+        try:
+            # Generate simulation ID from filename
+            sim_id = file_path.stem
+            
+            # Generate metadata if function provided
+            metadata = metadata_generator(file_path) if metadata_generator else {}
+            
+            # Add simulation to catalog
+            entry = self.add_simulation(
+                sim_id=sim_id,
+                source_file=file_path,
+                metadata=metadata,
+                tags=tags,
+                converter=converter
+            )
+            
+            return {"success": True, "entry": entry, "file": str(file_path)}
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "file": str(file_path),
+                "error": str(e)
+            }
+
+    def bulk_import(
+        self,
+        source_dir: Path,
+        pattern: str = "*.dfsu",
+        metadata_generator: Optional[Callable] = None,
+        tags: Optional[List[str]] = None,
+        converter: str = "mike",
+        parallel: bool = True,
+        max_workers: int = None,
+        skip_existing: bool = True
+    ) -> Dict[str, List]:
+        """Import multiple simulations in parallel.
+        
+        Args:
+            source_dir: Directory containing simulation files
+            pattern: File pattern to match (e.g., "*.dfsu")
+            metadata_generator: Optional function to generate metadata from files
+            tags: List of tags to apply to all imported simulations
+            converter: Converter type to use
+            parallel: Whether to use parallel processing
+            max_workers: Maximum number of parallel workers
+            skip_existing: Skip files that would create duplicate simulation IDs
+            
+        Returns:
+            Dictionary containing successful and failed imports
+        """
+        source_dir = Path(source_dir)
+        files = list(source_dir.glob(pattern))
+        
+        if not files:
+            raise ValueError(f"No files matching pattern '{pattern}' found in {source_dir}")
+
+        print(f"Found {len(files)} files to process")
+        
+        # Check for potential duplicates if skip_existing is True
+        if skip_existing:
+            files = [f for f in files if f.stem not in self.index["simulations"]]
+            print(f"{len(files)} files remaining after removing existing entries")
+
+        results = {
+            "successful": [],
+            "failed": [],
+            "skipped": []
+        }
+
+        if parallel and len(files) > 1:
+            # Use ThreadPoolExecutor for parallel processing
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Submit all files for processing
+                future_to_file = {
+                    executor.submit(
+                        self._process_single_file,
+                        file_path,
+                        metadata_generator,
+                        tags,
+                        converter
+                    ): file_path 
+                    for file_path in files
+                }
+                
+                # Process results as they complete with progress bar
+                with tqdm(total=len(files), desc="Processing files") as pbar:
+                    for future in as_completed(future_to_file):
+                        result = future.result()
+                        if result["success"]:
+                            results["successful"].append(result["entry"])
+                        else:
+                            results["failed"].append(result)
+                        pbar.update(1)
+        else:
+            # Process files sequentially with progress bar
+            for file_path in tqdm(files, desc="Processing files"):
+                result = self._process_single_file(
+                    file_path,
+                    metadata_generator,
+                    tags,
+                    converter
+                )
+                if result["success"]:
+                    results["successful"].append(result["entry"])
+                else:
+                    results["failed"].append(result)
+
+        # Print summary
+        print("\nImport Summary:")
+        print(f"Successful imports: {len(results['successful'])}")
+        print(f"Failed imports: {len(results['failed'])}")
+        if results['failed']:
+            print("\nFailed files:")
+            for failure in results['failed']:
+                print(f"- {failure['file']}: {failure['error']}")
+
+        return results
+
+
 
 
     def get_simulation(self, sim_id: str) -> zarr.Group:

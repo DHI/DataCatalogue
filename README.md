@@ -27,7 +27,7 @@ zarrcatalogue/
 
 data/
 data_zarr/ # only temporary for testing of conversion
-catalog/ # 
+catalog/ # zarr data along with json catalogue
 
 
 ## Features
@@ -107,11 +107,11 @@ Single file conversion (no batch processing yet)
 ## Future Development
 
 ### Planned features:
+* Batch processing capabilities
+* Advanced querying and filtering
+* Statistics in Zarr
 * conversion back zarr2mike
 * leverage mikeio plotting after conversion back
-* Batch processing capabilities
-* Data catalog system for managing multiple simulations
-* Advanced querying and filtering
 
 * Export capabilities to other formats
 * Support for additional MIKE file formats (MIKE SHE, FEFLOW)
