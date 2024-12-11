@@ -179,6 +179,112 @@ class MIKEConverter(BaseConverter):
         
         return conversion_metadata
 
+    def from_zarr(
+        self,
+        zarr_path: Path,
+        output_file: Path,
+    ) -> Dict[str, Any]:
+        """Convert zarr store back to MIKE dfsu format.
+        
+        Args:
+            zarr_path: Path to input zarr store
+            output_file: Path to output dfsu file
+            
+        Returns:
+            Dictionary containing metadata about the conversion
+        """
+        # Open zarr store
+        store = zarr.open(zarr_path, 'r')
+        
+        # Extract geometry information
+        topo = store['topology']
+        nodes = topo['nodes'][:]
+        elements = topo['elements'][:]
+        
+        # Remove padding (-1) from elements
+        elements = np.array([elem[elem >= 0] for elem in elements])
+        
+        # Create appropriate geometry based on metadata
+        geometry_type = store.attrs['geometry_type']
+        if geometry_type == 'GeometryFM2D':
+            geometry = mikeio.spatial.GeometryFM2D(
+                node_coordinates=nodes,
+                element_table=elements,
+                projection=topo.attrs.get('projection', None)
+            )
+        elif geometry_type == 'GeometryFMVerticalProfile':
+            geometry = mikeio.spatial.GeometryFMVerticalProfile(
+                node_coordinates=nodes,
+                element_table=elements,
+                n_sigma=topo.attrs.get('n_sigma_layers'),
+                n_layers=topo.attrs.get('n_layers'),
+                projection=topo.attrs.get('projection', None)
+            )
+        else:
+            raise ValueError(f"Unsupported geometry type: {geometry_type}")
+        
+        # Extract time information
+        time_data = store['data/time'][:]
+        time = [datetime.fromtimestamp(t) for t in time_data]
+        
+        # Create data arrays for each variable
+        data_arrays = []
+        items = []
+        for item_name in store['data'].array_keys():
+            if item_name != 'time':
+                item_data = store['data'][item_name][:]
+                unit = store['data'][item_name].attrs.get('unit', '')
+                item_info = store['data'][item_name].attrs.get('item_info', '')
+                
+                # Extract EUM type from item_info string
+                eum_type = getattr(mikeio.EUMType, item_info.split('.')[-1]) if item_info else None
+                if eum_type is None:
+                    raise ValueError(f"Could not determine EUM type for {item_name}. Item info: {item_info}")
+                
+                data_arrays.append(item_data)
+                items.append(mikeio.DataArray(
+                    data=item_data,
+                    time=time,
+                    geometry=geometry,
+                    item=mikeio.ItemInfo(item_name, eum_type),
+                ))
+        
+        # Create dataset
+        ds = mikeio.Dataset(
+            data=items,
+            time=time,
+            geometry=geometry
+        )
+        
+        # Write to dfsu file based on geometry type
+        if isinstance(geometry, mikeio.spatial.GeometryFM2D):
+            # For 2D files
+            ds.to_dfs(output_file)
+        elif isinstance(geometry, mikeio.spatial.GeometryFMVerticalProfile):
+            # For 2D vertical profile files
+            ds.to_dfs(output_file, dtype=mikeio.Dfsu2DV)
+        else:
+            # For 3D files
+            ds.to_dfs(output_file, dtype=mikeio.Dfsu3D)
+        
+        # Return metadata about the conversion
+        conversion_metadata = {
+            "model_type": self.model_type,
+            "converter_version": self.version,
+            "conversion_time": datetime.now().isoformat(),
+            "input_file": str(zarr_path),
+            "output_file": str(output_file),
+            "mikeio_version": mikeio.__version__,
+            "geometry_type": geometry_type,
+            "n_elements": len(elements),
+            "n_nodes": len(nodes),
+            "n_timesteps": len(time),
+            "variables": [item.name for item in items],
+            "time_range": [str(time[0]), str(time[-1])]
+        }
+        
+        return conversion_metadata
+
     def validate_conversion(
         self, 
         original_ds: Union[mikeio.Dataset, Path], 

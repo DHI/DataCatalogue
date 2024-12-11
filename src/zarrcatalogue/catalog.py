@@ -31,7 +31,7 @@ class CustomJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 class SimulationCatalog:
-    """A catalog system for managing hydraulic model simulation results."""
+    """A catalog system for managing model simulation results."""
     
     def __init__(self, base_path: Path):
         """Initialize the catalog."""

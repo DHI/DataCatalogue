@@ -102,16 +102,15 @@ validation = converter.validate_conversion(
 ## Current Limitations
 Currently supports MIKE dfsu files only
 Element types limited to triangles and quadrilaterals
-Single file conversion (no batch processing yet)
 
 ## Future Development
 
 ### Planned features:
-* Batch processing capabilities
+* conversion back zarr2mike (works for 2d already)
+* embedded data storage as alternative to raw data. Should this be in zarr or as a new file format?
 * Advanced querying and filtering
-* Statistics in Zarr
-* conversion back zarr2mike
-* leverage mikeio plotting after conversion back
+* Statistics from Zarr
+* leverage mikeio plotting (e.g. https://holoviews.org/user_guide/Geometry_Data.html) after conversion back
 
 * Export capabilities to other formats
 * Support for additional MIKE file formats (MIKE SHE, FEFLOW)
