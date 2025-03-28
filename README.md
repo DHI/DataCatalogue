@@ -5,6 +5,7 @@ A Python package for converting and managing model results (e.g. flexible mesh f
 
 ## repository structure
 
+```
 zarrcatalogue/
 ├── src/
 │   ├── zarrcatalogue/
@@ -21,14 +22,12 @@ zarrcatalogue/
 │   └── setup.py
 ├── notebooks/
 │   ├── 01_basic_conversion.ipynb
-│   ├── 02_metadata_handling.ipynb
-│   └── 03_querying_catalog.ipynb
 └── README.md
 
 data/
 data_zarr/ # only temporary for testing of conversion
 catalog/ # zarr data along with json catalogue
-
+```
 
 ## Features
 
