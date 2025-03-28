@@ -41,7 +41,7 @@ Currently supports conversion of MIKE flexible mesh files (dfsu) to Zarr format,
 
 #### Data Structure
 The converted Zarr store follows this structure:
-
+```
 simulation.zarr/
 ├── data/
 │ ├── variable1 # (n_timesteps, n_elements) array
@@ -51,7 +51,7 @@ simulation.zarr/
 ├── nodes # (n_nodes, 3) node coordinates
 ├── elements # (n_elements, max_nodes) connectivity
 └── element_coordinates # (n_elements, 3) element centers
-
+```
 
 #### Metadata
 Stores comprehensive metadata including:
