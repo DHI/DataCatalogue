@@ -134,8 +134,8 @@ class MIKEConverter(BaseConverter):
         })
         
         # Store each item's data
-        for item_number, item_name in enumerate(ds.names):
-            item_data = ds[item_name].to_numpy()
+        for item_number, da in enumerate(ds):
+            item_data = da.to_numpy()
             
             # Determine chunks based on data shape
             # item_chunks = (chunks['time'], chunks['elements'])
@@ -144,7 +144,7 @@ class MIKEConverter(BaseConverter):
             
             # Create dataset with compression
             data.create_array(
-                item_name,
+                da.name,
                 shape=item_data.shape,
                 dtype=item_data.dtype,
                 #data=item_data,
@@ -152,12 +152,12 @@ class MIKEConverter(BaseConverter):
                 #compression='blosc',
                 #compression_opts={'cname': 'zstd', 'clevel': compression_level}
             )
-            data[item_name] = item_data
+            data[da.name] = item_data
             
             # Store item metadata
-            data[item_name].attrs.update({
-                'unit': ds[item_name].unit,
-                'item_info': str(ds[item_name].type),
+            data[da.name].attrs.update({
+                'unit': da.unit,
+                'item_info': str(da.type),
                 'item_number': item_number
             })
         
@@ -266,18 +266,19 @@ class MIKEConverter(BaseConverter):
             geometry=geometry
         )
 
+        # TODO this only works 50% of the time 🤔
         ds_sorted = ds[item_numbers]
         
         # Write to dfsu file based on geometry type
-        if isinstance(geometry, mikeio.spatial.GeometryFM2D):
+        #if isinstance(geometry, mikeio.spatial.GeometryFM2D):
             # For 2D files
-            ds_sorted.to_dfs(output_file)
-        elif isinstance(geometry, mikeio.spatial.GeometryFMVerticalProfile):
+        ds_sorted.to_dfs(output_file)
+        #elif isinstance(geometry, mikeio.spatial.GeometryFMVerticalProfile):
             # For 2D vertical profile files
-            ds.to_dfs(output_file, dtype=mikeio.Dfsu2DV)
-        else:
+        #    ds.to_dfs(output_file, dtype=mikeio.Dfsu2DV)
+        #else:
             # For 3D files
-            ds.to_dfs(output_file, dtype=mikeio.Dfsu3D)
+        #    ds.to_dfs(output_file, dtype=mikeio.Dfsu3D)
         
         # Return metadata about the conversion
         conversion_metadata = {

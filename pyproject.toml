@@ -20,6 +20,3 @@ dev = [
 testpaths = [
     "tests",
 ]
-python_paths = [
-    "src",
-]
