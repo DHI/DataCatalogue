@@ -138,9 +138,9 @@ class MIKEConverter(BaseConverter):
             item_data = ds[item_name].to_numpy()
             
             # Determine chunks based on data shape
-            item_chunks = (chunks['time'], chunks['elements'])
-            if item_data.ndim > 2:  # For vector quantities
-                item_chunks = item_chunks + (-1,)
+            # item_chunks = (chunks['time'], chunks['elements'])
+            #if item_data.ndim > 2:  # For vector quantities
+            #    item_chunks = item_chunks + (-1,)
             
             # Create dataset with compression
             data.create_array(
@@ -148,7 +148,7 @@ class MIKEConverter(BaseConverter):
                 shape=item_data.shape,
                 dtype=item_data.dtype,
                 #data=item_data,
-                chunks=item_chunks,
+            #    chunks=item_chunks,
                 #compression='blosc',
                 #compression_opts={'cname': 'zstd', 'clevel': compression_level}
             )
@@ -243,6 +243,7 @@ class MIKEConverter(BaseConverter):
                 # Extract EUM type from item_info string
                 #eum_type = getattr(mikeio.EUMType, item_info.split('.')[-1]) if item_info else None
                 eum_type = mikeio.EUMType(int(item_info))
+                eum_unit = mikeio.EUMUnit(int(unit))
                 if eum_type is None:
                     raise ValueError(f"Could not determine EUM type for {item_name}. Item info: {item_info}")
                 
@@ -251,7 +252,7 @@ class MIKEConverter(BaseConverter):
                     data=item_data,
                     time=time,
                     geometry=geometry,
-                    item=mikeio.ItemInfo(item_name, eum_type),
+                    item=mikeio.ItemInfo(item_name, eum_type, eum_unit),
                 ))
         
         # Create dataset

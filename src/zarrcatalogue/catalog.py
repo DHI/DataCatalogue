@@ -1,6 +1,6 @@
 # src/zarrcatalogue/catalog.py
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 import zarr
 import json
 from datetime import datetime
@@ -9,8 +9,7 @@ import numpy as np
 import shutil
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict, Optional, Union, Callable
-import glob
+from typing import Callable
 from tqdm import tqdm
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -50,7 +49,7 @@ class SimulationCatalog:
                 with open(self.index_file, 'r') as f:
                     self.index = json.load(f)
             except json.JSONDecodeError:
-                print(f"Warning: Corrupted index file found. Creating new index.")
+                print("Warning: Corrupted index file found. Creating new index.")
                 self.index = self._create_new_index()
                 self._save_index()
         else:
@@ -128,7 +127,7 @@ class SimulationCatalog:
             self._save_index()
             return entry
             
-        except Exception as e:
+        except Exception:
             # Clean up if something goes wrong
             if 'sim_path' in locals() and sim_path.exists():
                 shutil.rmtree(sim_path)

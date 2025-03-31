@@ -14,3 +14,12 @@ dev = [
     "ipykernel>=6.29.5",
     "pytest>=8.3.5",
 ]
+
+# pytest use src layout
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+python_paths = [
+    "src",
+]
