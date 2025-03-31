@@ -19,7 +19,7 @@ jobs:
     - uses: astral-sh/ruff-action@v2 # Fail fast if there are any linting errors
       with:
         version: 0.6.2 # consistent with pyproject.toml ?
-        src: mikeio # ignore notebooks
+        src: src # ignore notebooks
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
