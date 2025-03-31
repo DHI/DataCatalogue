@@ -235,14 +235,14 @@ class MIKEConverter(BaseConverter):
         # Create data arrays for each variable
         data_arrays = []
         items = []
-        item_numbers = []
+        item_map_order = {}
         for item_name in store['data'].array_keys():
             if item_name != 'time':
                 item_data = store['data'][item_name][:]
                 unit = store['data'][item_name].attrs.get('unit', '')
                 item_info = store['data'][item_name].attrs.get('item_info', '')
                 item_number = store['data'][item_name].attrs.get('item_number')
-                item_numbers.append(item_number)
+                item_map_order[item_name] = int(item_number)
                 
                 # Extract EUM type from item_info string
                 #eum_type = getattr(mikeio.EUMType, item_info.split('.')[-1]) if item_info else None
@@ -266,8 +266,8 @@ class MIKEConverter(BaseConverter):
             geometry=geometry
         )
 
-        # TODO this only works 50% of the time 🤔
-        ds_sorted = ds[item_numbers]
+        item_names = sorted(item_map_order, key=lambda k: item_map_order[k])
+        ds_sorted = ds[item_names]
         
         # Write to dfsu file based on geometry type
         #if isinstance(geometry, mikeio.spatial.GeometryFM2D):
