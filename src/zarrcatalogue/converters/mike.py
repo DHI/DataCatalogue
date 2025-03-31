@@ -85,17 +85,18 @@ class MIKEConverter(BaseConverter):
         store = zarr.open(zarr_path, mode='w')
         
         # Store mesh topology
-        topo = store.create_group('topology')
+        topo: zarr.Group = store.create_group('topology')
         
         # Store geometry information
-        topo.create_dataset('nodes', data=ds.geometry.node_coordinates)
+        #topo.create_array('nodes', data=ds.geometry.node_coordinates)
+        topo['nodes'] = ds.geometry.node_coordinates
         
         # Process and store element table
         formatted_elements, element_metadata = self._process_element_table(ds.geometry.element_table)
-        topo.create_dataset('elements', data=formatted_elements)
+        topo['elements'] = formatted_elements
         
         # Store element coordinates
-        topo.create_dataset('element_coordinates', data=ds.geometry.element_coordinates)
+        topo['element_coordinates'] = ds.geometry.element_coordinates
         
         # Store geometry metadata
         geometry_metadata = {
@@ -122,7 +123,7 @@ class MIKEConverter(BaseConverter):
         
         # Store time information
         time_stamps = np.array([t.timestamp() for t in ds.time])
-        data.create_dataset('time', data=time_stamps)
+        data['time'] = time_stamps
         
         # Add time metadata
         data.attrs.update({
@@ -142,13 +143,16 @@ class MIKEConverter(BaseConverter):
                 item_chunks = item_chunks + (-1,)
             
             # Create dataset with compression
-            data.create_dataset(
+            data.create_array(
                 item_name,
-                data=item_data,
+                shape=item_data.shape,
+                dtype=item_data.dtype,
+                #data=item_data,
                 chunks=item_chunks,
-                compression='blosc',
-                compression_opts={'cname': 'zstd', 'clevel': compression_level}
+                #compression='blosc',
+                #compression_opts={'cname': 'zstd', 'clevel': compression_level}
             )
+            data[item_name] = item_data
             
             # Store item metadata
             data[item_name].attrs.update({
@@ -237,7 +241,8 @@ class MIKEConverter(BaseConverter):
                 item_info = store['data'][item_name].attrs.get('item_info', '')
                 
                 # Extract EUM type from item_info string
-                eum_type = getattr(mikeio.EUMType, item_info.split('.')[-1]) if item_info else None
+                #eum_type = getattr(mikeio.EUMType, item_info.split('.')[-1]) if item_info else None
+                eum_type = mikeio.EUMType(int(item_info))
                 if eum_type is None:
                     raise ValueError(f"Could not determine EUM type for {item_name}. Item info: {item_info}")
                 
