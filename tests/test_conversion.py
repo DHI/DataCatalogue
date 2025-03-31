@@ -21,5 +21,6 @@ def test_to_from_zarr(tmp_path) -> None:
     assert ds1["Surface elevation"].type == ds2["Surface elevation"].type
     assert ds1["Surface elevation"].unit == ds2["Surface elevation"].unit
     
-    # TODO maintain original order of items
-    #assert np.allclose(ds1[0].values, ds2[0].values)
+    for da1, da2 in zip(ds1, ds2):
+        assert np.allclose(da1.values, da2.values)
+

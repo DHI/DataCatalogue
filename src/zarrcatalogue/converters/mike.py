@@ -134,7 +134,7 @@ class MIKEConverter(BaseConverter):
         })
         
         # Store each item's data
-        for item_name in ds.names:
+        for item_number, item_name in enumerate(ds.names):
             item_data = ds[item_name].to_numpy()
             
             # Determine chunks based on data shape
@@ -158,6 +158,7 @@ class MIKEConverter(BaseConverter):
             data[item_name].attrs.update({
                 'unit': ds[item_name].unit,
                 'item_info': str(ds[item_name].type),
+                'item_number': item_number
             })
         
         # Store conversion metadata
@@ -234,11 +235,14 @@ class MIKEConverter(BaseConverter):
         # Create data arrays for each variable
         data_arrays = []
         items = []
+        item_numbers = []
         for item_name in store['data'].array_keys():
             if item_name != 'time':
                 item_data = store['data'][item_name][:]
                 unit = store['data'][item_name].attrs.get('unit', '')
                 item_info = store['data'][item_name].attrs.get('item_info', '')
+                item_number = store['data'][item_name].attrs.get('item_number')
+                item_numbers.append(item_number)
                 
                 # Extract EUM type from item_info string
                 #eum_type = getattr(mikeio.EUMType, item_info.split('.')[-1]) if item_info else None
@@ -261,11 +265,13 @@ class MIKEConverter(BaseConverter):
             time=time,
             geometry=geometry
         )
+
+        ds_sorted = ds[item_numbers]
         
         # Write to dfsu file based on geometry type
         if isinstance(geometry, mikeio.spatial.GeometryFM2D):
             # For 2D files
-            ds.to_dfs(output_file)
+            ds_sorted.to_dfs(output_file)
         elif isinstance(geometry, mikeio.spatial.GeometryFMVerticalProfile):
             # For 2D vertical profile files
             ds.to_dfs(output_file, dtype=mikeio.Dfsu2DV)
