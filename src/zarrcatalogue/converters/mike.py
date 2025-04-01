@@ -56,7 +56,7 @@ class MIKEConverter(BaseConverter):
 
     def to_zarr(
         self, 
-        input_file: Path, 
+        input_file: Path | mikeio.Dataset, 
         zarr_path: Path, 
         chunks: Optional[Dict] = None,
         compression_level: int = 5,
@@ -75,7 +75,10 @@ class MIKEConverter(BaseConverter):
             Dictionary containing metadata about the conversion
         """
         # Read MIKE file
-        ds = mikeio.read(input_file)
+        if isinstance(input_file, mikeio.Dataset):
+            ds = input_file
+        else:
+            ds = mikeio.read(input_file)
         
         # Default chunking if not specified
         if chunks is None:

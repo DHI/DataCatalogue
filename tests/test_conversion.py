@@ -1,5 +1,8 @@
 import mikeio
 import numpy as np
+import pandas as pd
+import zarr
+import zarr.storage
 from zarrcatalogue.converters.mike import MIKEConverter
 
 
@@ -23,3 +26,19 @@ def test_to_from_zarr(tmp_path) -> None:
     for da1, da2 in zip(ds1, ds2):
         assert np.allclose(da1.values, da2.values)
 
+
+def test_to_from_long_timeseries(tmp_path) -> None:
+    time = pd.date_range("2022-01-01", "2023-12-31", freq="30min")
+
+    geometry = mikeio.Grid2D(nx=2, ny=2, dx=1, dy=1).to_geometryFM()
+
+    ds = mikeio.DataArray(
+        data=np.zeros((len(time), geometry.n_elements)), time=time, geometry=geometry
+    )._to_dataset()
+
+    zarr_fp = zarr.storage.MemoryStore()
+    dfsc_fp = tmp_path / "converted.dfsu"
+
+    converter = MIKEConverter()
+    converter.to_zarr(ds, zarr_fp)
+    converter.from_zarr(zarr_fp, dfsc_fp)
