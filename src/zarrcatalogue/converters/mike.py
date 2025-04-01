@@ -2,6 +2,7 @@
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, Union
 import mikeio
+import pandas as pd
 import zarr
 import numpy as np
 from datetime import datetime
@@ -232,8 +233,7 @@ class MIKEConverter(BaseConverter):
             raise ValueError(f"Unsupported geometry type: {geometry_type}")
         
         # Extract time information
-        time_data = store['data/time'][:]
-        time = [datetime.fromtimestamp(t) for t in time_data]
+        time = pd.to_datetime(store['data/time'][:])
         
         # Create data arrays for each variable
         data_arrays = []
