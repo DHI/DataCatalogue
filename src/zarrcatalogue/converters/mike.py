@@ -6,6 +6,8 @@ import pandas as pd
 import zarr
 import numpy as np
 from datetime import datetime
+
+import zarr.storage
 from .base import BaseConverter
 
 class MIKEConverter(BaseConverter):
@@ -58,7 +60,7 @@ class MIKEConverter(BaseConverter):
     def to_zarr(
         self, 
         input_file: Path | mikeio.Dataset, 
-        zarr_path: Path, 
+        zarr_path: zarr.storage.StoreLike, 
         chunks: Optional[Dict] = None,
         compression_level: int = 5,
         **kwargs
@@ -190,7 +192,7 @@ class MIKEConverter(BaseConverter):
 
     def from_zarr(
         self,
-        zarr_path: Path,
+        zarr_path: zarr.storage.StoreLike,
         output_file: Path,
     ) -> Dict[str, Any]:
         """Convert zarr store back to MIKE dfsu format.
