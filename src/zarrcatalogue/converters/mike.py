@@ -199,7 +199,7 @@ class MIKEConverter(BaseConverter):
             Dictionary containing metadata about the conversion
         """
         # Open zarr store
-        store = zarr.open(zarr_path, 'r')
+        store = zarr.open(zarr_path, mode='r')
         
         # Extract geometry information
         topo = store['topology']
