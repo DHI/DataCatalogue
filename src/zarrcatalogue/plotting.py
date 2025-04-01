@@ -1,10 +1,8 @@
 # src/zarrcatalogue/plotting.py
 from pathlib import Path
-from typing import Optional, Union, List
 import mikeio
 from mikeio.spatial import GeometryFMVerticalProfile
 import zarr
-import numpy as np
 from datetime import datetime
 
 class MeshPlotter:

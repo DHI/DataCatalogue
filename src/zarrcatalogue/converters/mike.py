@@ -85,17 +85,18 @@ class MIKEConverter(BaseConverter):
         store = zarr.open(zarr_path, mode='w')
         
         # Store mesh topology
-        topo = store.create_group('topology')
+        topo: zarr.Group = store.create_group('topology')
         
         # Store geometry information
-        topo.create_dataset('nodes', data=ds.geometry.node_coordinates)
+        #topo.create_array('nodes', data=ds.geometry.node_coordinates)
+        topo['nodes'] = ds.geometry.node_coordinates
         
         # Process and store element table
         formatted_elements, element_metadata = self._process_element_table(ds.geometry.element_table)
-        topo.create_dataset('elements', data=formatted_elements)
+        topo['elements'] = formatted_elements
         
         # Store element coordinates
-        topo.create_dataset('element_coordinates', data=ds.geometry.element_coordinates)
+        topo['element_coordinates'] = ds.geometry.element_coordinates
         
         # Store geometry metadata
         geometry_metadata = {
@@ -122,7 +123,7 @@ class MIKEConverter(BaseConverter):
         
         # Store time information
         time_stamps = np.array([t.timestamp() for t in ds.time])
-        data.create_dataset('time', data=time_stamps)
+        data['time'] = time_stamps
         
         # Add time metadata
         data.attrs.update({
@@ -133,27 +134,31 @@ class MIKEConverter(BaseConverter):
         })
         
         # Store each item's data
-        for item_name in ds.names:
-            item_data = ds[item_name].to_numpy()
+        for item_number, da in enumerate(ds):
+            item_data = da.to_numpy()
             
             # Determine chunks based on data shape
-            item_chunks = (chunks['time'], chunks['elements'])
-            if item_data.ndim > 2:  # For vector quantities
-                item_chunks = item_chunks + (-1,)
+            # item_chunks = (chunks['time'], chunks['elements'])
+            #if item_data.ndim > 2:  # For vector quantities
+            #    item_chunks = item_chunks + (-1,)
             
             # Create dataset with compression
-            data.create_dataset(
-                item_name,
-                data=item_data,
-                chunks=item_chunks,
-                compression='blosc',
-                compression_opts={'cname': 'zstd', 'clevel': compression_level}
+            data.create_array(
+                da.name,
+                shape=item_data.shape,
+                dtype=item_data.dtype,
+                #data=item_data,
+            #    chunks=item_chunks,
+                #compression='blosc',
+                #compression_opts={'cname': 'zstd', 'clevel': compression_level}
             )
+            data[da.name] = item_data
             
             # Store item metadata
-            data[item_name].attrs.update({
-                'unit': ds[item_name].unit,
-                'item_info': str(ds[item_name].type),
+            data[da.name].attrs.update({
+                'unit': da.unit,
+                'item_info': str(da.type),
+                'item_number': item_number
             })
         
         # Store conversion metadata
@@ -230,14 +235,19 @@ class MIKEConverter(BaseConverter):
         # Create data arrays for each variable
         data_arrays = []
         items = []
+        item_map_order = {}
         for item_name in store['data'].array_keys():
             if item_name != 'time':
                 item_data = store['data'][item_name][:]
                 unit = store['data'][item_name].attrs.get('unit', '')
                 item_info = store['data'][item_name].attrs.get('item_info', '')
+                item_number = store['data'][item_name].attrs.get('item_number')
+                item_map_order[item_name] = int(item_number)
                 
                 # Extract EUM type from item_info string
-                eum_type = getattr(mikeio.EUMType, item_info.split('.')[-1]) if item_info else None
+                #eum_type = getattr(mikeio.EUMType, item_info.split('.')[-1]) if item_info else None
+                eum_type = mikeio.EUMType(int(item_info))
+                eum_unit = mikeio.EUMUnit(int(unit))
                 if eum_type is None:
                     raise ValueError(f"Could not determine EUM type for {item_name}. Item info: {item_info}")
                 
@@ -246,7 +256,7 @@ class MIKEConverter(BaseConverter):
                     data=item_data,
                     time=time,
                     geometry=geometry,
-                    item=mikeio.ItemInfo(item_name, eum_type),
+                    item=mikeio.ItemInfo(item_name, eum_type, eum_unit),
                 ))
         
         # Create dataset
@@ -255,17 +265,20 @@ class MIKEConverter(BaseConverter):
             time=time,
             geometry=geometry
         )
+
+        item_names = sorted(item_map_order, key=lambda k: item_map_order[k])
+        ds_sorted = ds[item_names]
         
         # Write to dfsu file based on geometry type
-        if isinstance(geometry, mikeio.spatial.GeometryFM2D):
+        #if isinstance(geometry, mikeio.spatial.GeometryFM2D):
             # For 2D files
-            ds.to_dfs(output_file)
-        elif isinstance(geometry, mikeio.spatial.GeometryFMVerticalProfile):
+        ds_sorted.to_dfs(output_file)
+        #elif isinstance(geometry, mikeio.spatial.GeometryFMVerticalProfile):
             # For 2D vertical profile files
-            ds.to_dfs(output_file, dtype=mikeio.Dfsu2DV)
-        else:
+        #    ds.to_dfs(output_file, dtype=mikeio.Dfsu2DV)
+        #else:
             # For 3D files
-            ds.to_dfs(output_file, dtype=mikeio.Dfsu3D)
+        #    ds.to_dfs(output_file, dtype=mikeio.Dfsu3D)
         
         # Return metadata about the conversion
         conversion_metadata = {
