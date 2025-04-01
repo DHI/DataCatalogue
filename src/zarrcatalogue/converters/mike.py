@@ -2,9 +2,12 @@
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, Union
 import mikeio
+import pandas as pd
 import zarr
 import numpy as np
 from datetime import datetime
+
+import zarr.storage
 from .base import BaseConverter
 
 class MIKEConverter(BaseConverter):
@@ -56,8 +59,8 @@ class MIKEConverter(BaseConverter):
 
     def to_zarr(
         self, 
-        input_file: Path, 
-        zarr_path: Path, 
+        input_file: Path | mikeio.Dataset, 
+        zarr_path: zarr.storage.StoreLike, 
         chunks: Optional[Dict] = None,
         compression_level: int = 5,
         **kwargs
@@ -75,7 +78,10 @@ class MIKEConverter(BaseConverter):
             Dictionary containing metadata about the conversion
         """
         # Read MIKE file
-        ds = mikeio.read(input_file)
+        if isinstance(input_file, mikeio.Dataset):
+            ds = input_file
+        else:
+            ds = mikeio.read(input_file)
         
         # Default chunking if not specified
         if chunks is None:
@@ -186,7 +192,7 @@ class MIKEConverter(BaseConverter):
 
     def from_zarr(
         self,
-        zarr_path: Path,
+        zarr_path: zarr.storage.StoreLike,
         output_file: Path,
     ) -> Dict[str, Any]:
         """Convert zarr store back to MIKE dfsu format.
@@ -229,8 +235,7 @@ class MIKEConverter(BaseConverter):
             raise ValueError(f"Unsupported geometry type: {geometry_type}")
         
         # Extract time information
-        time_data = store['data/time'][:]
-        time = [datetime.fromtimestamp(t) for t in time_data]
+        time = pd.to_datetime(store['data/time'][:])
         
         # Create data arrays for each variable
         data_arrays = []
