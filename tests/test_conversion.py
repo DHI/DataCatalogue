@@ -1,6 +1,6 @@
 import mikeio
 import numpy as np
-from zarrcatalogue.converters.mike import MIKEConverter
+from zarrcatalogue import from_zarr, to_zarr
 
 
 def test_to_from_zarr(tmp_path) -> None:
@@ -8,10 +8,9 @@ def test_to_from_zarr(tmp_path) -> None:
     out_path = tmp_path / "oresund.zarr"
     dfsu_path = tmp_path / "oresund.dfsu"
 
-    converter = MIKEConverter()
-    converter.to_zarr(fp, out_path)
+    to_zarr(fp, out_path)
 
-    converter.from_zarr(out_path, dfsu_path)
+    from_zarr(out_path, dfsu_path)
 
     ds1 = mikeio.read(fp)
     ds2 = mikeio.read(dfsu_path)
