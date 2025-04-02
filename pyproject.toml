@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "mikeio>=2.4.0",
+    "pydantic>=2.11.1",
     "zarr>=3.0.6",
 ]
 
