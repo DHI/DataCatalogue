@@ -1,5 +1,6 @@
 import mikeio
 import numpy as np
+import xarray as xr
 from zarrcatalogue.converters.mike import MIKEConverter
 
 
@@ -22,4 +23,16 @@ def test_to_from_zarr(tmp_path) -> None:
     assert ds1["Surface elevation"].unit == ds2["Surface elevation"].unit
     for da1, da2 in zip(ds1, ds2):
         assert np.allclose(da1.values, da2.values)
+
+def test_zarr_is_compatible_with_xarray(tmp_path) -> None:
+
+    fp = "tests/testdata/oresundHD_run1.dfsu"
+    out_path = tmp_path / "oresund.zarr"
+
+    converter = MIKEConverter()
+    converter.to_zarr(fp, out_path)
+    
+    tree = xr.open_datatree(out_path, consolidated=False)
+    assert tree['data/Surface elevation'].dims == ('time', 'element')
+    assert tree['topology/nodes'].dims[0] == 'nodes'
 
