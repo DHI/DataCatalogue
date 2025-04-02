@@ -123,7 +123,13 @@ class MIKEConverter(BaseConverter):
         
         # Store time information
         time_stamps = np.array([t.timestamp() for t in ds.time])
-        data['time'] = time_stamps
+        data.create_array(
+                name='time',
+                shape=time_stamps.shape,
+                dtype=time_stamps.dtype,
+                dimension_names=('time',)
+        )
+        data['time'][:] = time_stamps
         
         # Add time metadata
         data.attrs.update({
@@ -147,18 +153,19 @@ class MIKEConverter(BaseConverter):
                 da.name,
                 shape=item_data.shape,
                 dtype=item_data.dtype,
+                dimension_names=da.dims,
                 #data=item_data,
             #    chunks=item_chunks,
                 #compression='blosc',
                 #compression_opts={'cname': 'zstd', 'clevel': compression_level}
             )
-            data[da.name] = item_data
+            data[da.name][:] = item_data
             
             # Store item metadata
             data[da.name].attrs.update({
                 'unit': da.unit,
                 'item_info': str(da.type),
-                'item_number': item_number
+                'item_number': item_number,
             })
         
         # Store conversion metadata
@@ -176,7 +183,7 @@ class MIKEConverter(BaseConverter):
             "time_range": [str(ds.start_time), str(ds.end_time)],
             "element_info": element_metadata,
             "chunks": chunks,
-            "compression_level": compression_level
+            "compression_level": compression_level,
         }
         
         # Store conversion metadata in root group
