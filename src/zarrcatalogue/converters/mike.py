@@ -89,14 +89,19 @@ class MIKEConverter(BaseConverter):
         
         # Store geometry information
         #topo.create_array('nodes', data=ds.geometry.node_coordinates)
-        topo['nodes'] = ds.geometry.node_coordinates
+        nc = ds.geometry.node_coordinates
+        topo.create_array('nodes', shape=nc.shape, dtype=nc.dtype, dimension_names=('nodes','xyz'))
+        topo['nodes'][:] = nc
         
         # Process and store element table
         formatted_elements, element_metadata = self._process_element_table(ds.geometry.element_table)
-        topo['elements'] = formatted_elements
+        topo.create_array('elements', shape=formatted_elements.shape, dtype=formatted_elements.dtype, dimension_names=('elements','e_nodes')) # TODO
+        topo['elements'][:] = formatted_elements
         
         # Store element coordinates
-        topo['element_coordinates'] = ds.geometry.element_coordinates
+        ec = ds.geometry.element_coordinates
+        topo.create_array('element_coordinates', shape=ec.shape, dtype=ec.dtype, dimension_names=('elements', 'xyz'))  # TODO xyz?
+        topo['element_coordinates'][:] = ec 
         
         # Store geometry metadata
         geometry_metadata = {

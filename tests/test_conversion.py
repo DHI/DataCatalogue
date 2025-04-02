@@ -31,7 +31,8 @@ def test_zarr_is_compatible_with_xarray(tmp_path) -> None:
 
     converter = MIKEConverter()
     converter.to_zarr(fp, out_path)
-
-    ds = xr.open_zarr(out_path, group="data", consolidated=False)
-    assert ds['Surface elevation'].dims == ('time', 'element')
+    
+    tree = xr.open_datatree(out_path, consolidated=False)
+    assert tree['data/Surface elevation'].dims == ('time', 'element')
+    assert tree['topology/nodes'].dims[0] == 'nodes'
 
