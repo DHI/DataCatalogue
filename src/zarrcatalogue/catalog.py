@@ -306,6 +306,7 @@ class SimulationCatalog:
         """
         results = []
         
+        # TODO replace this O(n) query with a proper database
         for sim_id, entry in self.index["simulations"].items():
             # Check geometry type
             if geometry_type and entry["conversion_metadata"]["geometry_type"] != geometry_type:
