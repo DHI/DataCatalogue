@@ -6,13 +6,13 @@ import zarr
 import numpy as np
 from datetime import datetime
 from .base import BaseConverter
+from .. import __version__
 
 class MIKEConverter(BaseConverter):
     """Converter for MIKE dfsu files."""
     
     def __init__(self):
         self.model_type = "MIKE"
-        self.version = "0.1.0"
 
     @staticmethod
     def _process_element_table(element_table: np.ndarray) -> Tuple[np.ndarray, Dict[str, Any]]:
@@ -164,7 +164,7 @@ class MIKEConverter(BaseConverter):
         # Store conversion metadata
         conversion_metadata = {
             "model_type": self.model_type,
-            "converter_version": self.version,
+            "converter_version": __version__,
             "conversion_time": datetime.now().isoformat(),
             "input_file": str(input_file),
             "mikeio_version": mikeio.__version__,
@@ -283,7 +283,7 @@ class MIKEConverter(BaseConverter):
         # Return metadata about the conversion
         conversion_metadata = {
             "model_type": self.model_type,
-            "converter_version": self.version,
+            "converter_version": __version__,
             "conversion_time": datetime.now().isoformat(),
             "input_file": str(zarr_path),
             "output_file": str(output_file),
@@ -334,7 +334,7 @@ class MIKEConverter(BaseConverter):
         """Return information about the MIKE converter."""
         return {
             "model_type": self.model_type,
-            "converter_version": self.version,
+            "converter_version": __version__,
             "supported_formats": ["dfsu"],
             "mikeio_version": mikeio.__version__
         }
